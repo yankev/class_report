@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# Find relations within the PostgreSQL data and explain why some \n# schools/departments/courses convert better than others by providing your \n# feedback along with visualizations that be easily understood.\n\n\n\nmultiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {\n  library(grid)\n  \n  # Make a list from the ... arguments and plotlist\n  plots <- c(list(...), plotlist)\n  \n  numPlots = length(plots)\n  \n  # If layout is NULL, then use 'cols' to determine layout\n  if (is.null(layout)) {\n    # Make the panel\n    # ncol: Number of columns of plots\n    # nrow: Number of rows needed, calculated from # of cols\n    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),\n                     ncol = cols, nrow = ceiling(numPlots/cols))\n  }\n  \n  if (numPlots==1) {\n    print(plots[[1]])\n    \n  } else {\n    # Set up the page\n    grid.newpage()\n    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))\n    \n    # Make each plot, in the correct location\n    for (i in 1:numPlots) {\n      # Get the i,j matrix positions of the regions that contain this subplot\n      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))\n      \n      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,\n                                      layout.pos.col = matchidx$col))\n    }\n  }\n}",
+    "created" : 1503639370873.000,
+    "dirty" : true,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "1874448332",
+    "id" : "DD43E9D4",
+    "lastKnownWriteTime" : 6,
+    "last_content_update" : 1503683041471,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

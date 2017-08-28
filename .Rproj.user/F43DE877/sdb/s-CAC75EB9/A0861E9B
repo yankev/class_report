@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "users_test_data <- users_final %>% group_by(school_id) %>% summarize(total = n())\nusers_test_data['prob'] <- predict(users_final_model, users_test_data, type=\"response\")\nusers_test_data\n",
+    "created" : 1503877804039.000,
+    "dirty" : true,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "2319260957",
+    "id" : "A0861E9B",
+    "lastKnownWriteTime" : 4667432000,
+    "last_content_update" : 1503877971281,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 9,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

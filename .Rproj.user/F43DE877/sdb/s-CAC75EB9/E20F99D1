@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# we need a response variable to consider when looking at course subscription rates\n\n# we first need to figure out which students are enrolled in the course\ncourse_enrollments <-\n  left_join(courses, enrollments, by=c(\"id\" = \"course_id\"))\n\ncourse_enrollments <- course_enrollments[-c(11, 12, 14)]\nnames(course_enrollments)[10] <- \"enrollment_id\"\ncourse_enrollments <- \n  left_join(course_enrollments, users_final %>% select(id, has_subscription),\n            by=c(\"user_id\" = \"id\"))\n\nce2 <-\n  course_enrollments %>%\n  group_by(id) %>%\n  summarize(total_subs = sum(has_subscription, na.rm = TRUE),\n            enrollment_count_2 = sum(!is.na(enrollment_id)))\n            \nce <- \n  right_join(courses, ce2, c(\"id\")) %>%\n  mutate(sub_ratio = total_subs/enrollment_count_2,\n         sub_ratio_full = total_subs/enrollments_count)\n\n# no real linear relatonships\n\nggplot(data=ce_nums, aes(x = documents_count, y=total_subs)) + geom_point()\nggplot(data=ce_nums, aes(x = enrollment_count_2, y=total_subs)) + geom_point()\n\n#ce with doc counts\n\nce <- left_join(ce, \n               documents %>% group_by(course_id) %>% summarise(num_docs = n()),\n               by=c(\"id\" = \"course_id\"))\n\n# lets get the values that are actual numbers in this case\n\n#ce_nums_bool <- sapply(ce, is.numeric)\n#ce_nums <- ce[, ce_nums_bool]\n\nce_nums <- ce %>% select(total_subs, enrollment_count_2, sub_ratio, num_docs)\nrow.has.na <- apply(ce_nums, 1, function(x){any(is.na(x)) || any(is.nan(x) || any(is.infinite(x)))})\nce_nums_clean <- ce_nums[!row.has.na,]\nce_corr_matrix <- cor(ce_nums_clean)\nhchart(ce_corr_matrix)\n\n\nce_corr_matrix[, \"total_subs\"]\ncorrplot(ce_corr_matrix)\n\n",
+    "created" : 1503764656302.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "854899565",
+    "id" : "E20F99D1",
+    "lastKnownWriteTime" : 1503879482,
+    "last_content_update" : 1503879482679,
+    "path" : "~/students/courses.R",
+    "project_path" : "courses.R",
+    "properties" : {
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

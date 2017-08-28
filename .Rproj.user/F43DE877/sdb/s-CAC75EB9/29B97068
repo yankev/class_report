@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# department analysis\n\ndep2 <- left_join(departments, ce, by=c(\"id\" = \"department_id\"))\ndep2 <- dep2 %>% group_by(id) %>% summarise(total_subs = sum(total_subs, rm.na=TRUE), total_enrollments=sum(enrollment_count_2, rm.na=TRUE))\ndep2 <- dep2 %>% left_join(departments, dep2, by=c(\"id\"))\n# need to remove all departments with no enrollments\ndep2 <- dep2 %>% filter(!is.na(total_enrollments), !is.na(total_subs))\n\nnum_dep2 <- dep2[, c(\"total_subs\", \"total_enrollments\", \"courses_count\", \"documents_count\", \"enrollments_count\")]\ndep_corr_matrix <- cor(num_dep2)\ncorrplot(dep_corr_matrix, method=\"ellipse\")\n\n# let's make some scatter plots\n\nggplot(data=dep2, aes(x=documents_count, y=total_subs)) + geom_point()\n\n\n#models\ndep_model <-\n  glm(data=dep2, \n    total_subs ~ total_enrollments + courses_count + documents_count + enrollments_count,\n    family=poisson)\n\nsummary(dep_model)\n\n\n# let's evaluate the difference between total_enrollments and total_subs\ndiffs <- dep2 %>% mutate(diff = total_enrollments - total_subs) %>% select(diff)\nlibrary(psych)\ndescribe(diffs$diff)\nggplot(data=diffs, aes(x=diff)) + geom_histogram(bins=30)\nggplot(data=dep2, aes(x=total_subs)) + geom_histogram(bins=30)\n\n\n# let's extended the department df with counts\n\n# we'll have to group the courses table by # of docs\nce_group_by_dep <- \n  ce %>% \n  group_by(department_id) %>% \n  summarise(num_docs_dep = sum(num_docs, na.rm=TRUE), num_courses=n())\n\nfull_dep <- left_join(dep2, ce_group_by_dep, by=c(\"id\" = \"department_id\"))\nfull_dep\n\n\n# actually we should remove some of the columns that we don't want\nfull_dep <- full_dep %>% select(id, school_id, total_subs, total_enrollments, num_docs_dep, num_courses)\nfull_dep$school_id <- as.factor(full_dep$school_id)\n\nnum_dep2 <- full_dep[, c(\"total_subs\", \"total_enrollments\", \"num_courses\", \"num_docs_dep\")]\ndep_corr_matrix <- cor(num_dep2)\nhchart(dep_corr_matrix)\n\ncorrplot(dep_corr_matrix, method=\"ellipse\")\n\n\nnew_dep_model <-\n  glm(data=full_dep, \n      total_subs ~ school_id + num_docs_dep,\n      family=poisson())\n\nsummary(new_dep_model)\nstep(new_dep_model)\nexp(coef(new_dep_model))\n\n\n\n\n\nsummary(dep_model)  ",
+    "created" : 1503802349660.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2721734014",
+    "id" : "29B97068",
+    "lastKnownWriteTime" : 1503890059,
+    "last_content_update" : 1503890059254,
+    "path" : "~/students/departments.R",
+    "project_path" : "departments.R",
+    "properties" : {
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

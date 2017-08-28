@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "library(RPostgreSQL)\nlibrary(dplyr)\nlibrary(ggplot2)\n\ndrv <- dbDriver(\"PostgreSQL\")\n# creates a connection to the postgres database\ncon <- dbConnect(drv, dbname = \"students2\",\n                 host = \"localhost\", port = 5432,\n                 user = \"postgres\")\n\ndbListTables(con)\ndbExistsTable(con, \"users\")\n\n# get all useful tables from the db into R dataframes\nusers <- dbGetQuery(con, \"SELECT * from users\")\nvotes <- dbGetQuery(con, \"SELECT * from votes\")\nsubscriptions <- dbGetQuery(con, \"SELECT * from subscriptions\")\nschools <- dbGetQuery(con, \"select schools.*, short_name as country from schools left join countries ON country_id = countries.id;\")\ndepartments <- dbGetQuery(con, \"SELECT * from departments\")\ncourses <- dbGetQuery(con, \"SELECT * from courses\")\ndocuments <- dbGetQuery(con, \"SELECT * from documents\")\nenrollments <- dbGetQuery(con, \"SELECT * from enrollments\")\nlogins <- dbGetQuery(con, \"SELECT * from logins\")\n\n",
+    "created" : 1503593015015.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "52068325",
+    "id" : "E3D4E9BF",
+    "lastKnownWriteTime" : 1503723691,
+    "last_content_update" : 1503723691920,
+    "path" : "~/students/code.R",
+    "project_path" : "code.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

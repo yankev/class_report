@@ -1,0 +1,138 @@
+---
+title: "Subscriptions Report"
+author: "Kevin Yan"
+date: '2017-08-27'
+output: 
+  html_document:
+    theme: lumen
+    highlight: pygments
+    toc: true
+    toc_float: true
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(highcharter)
+library(rmarkdown)
+library(shiny)
+```
+## Abstract
+
+In this report we're going to be looking to see if there are any visible factors in the data that contribute to higher subscriptions rates and counts. We will look at the data to see if there are any noticable patterns starting at the user level, all the way up to the school level.
+
+
+## Methodology
+Ultimately the goal is to understand what factors affect the amount of subscriptions to the service. In order to do so, we must first genearte response variables that can measure the intended targets, thus in the analysis I will proceed to use `Subscription Rate`, as well `Subscription Counts` to represent the targets. Because we have decided to break down the analysis into different view points based on the hierarchy of the school system, we need to generate these values through aggregation.
+
+We first look at students to see if there are differences in their attributes or behaviour that can explain their likelihood of subscribing. We will then consider if there are differences in courses that can explain why some courses may be more successful in inducing subscribers. We continue this type of analysis for departments, and finally to the schools themselves. However, we do notice that there is limited additional information we get at the different levels (ie: courses, departments, schools), any significant contributors we find at the more specific levels should translate to the higher levels. This is a prediction solely based on the fact that columns like `enrollment count`, `documents count`, and `subscription` at higher levels are aggregated from those same counts from lower levels.
+
+## Analysis and Results
+
+### Users
+
+#### Overview
+Below you will see a preview of the variables we will be using in our analysis, and some of the values that they take on.
+```{r cars}
+str(users_final)
+```
+For the most part, we will only be looking at variables with numerical values, with the one exclusion being `school_id`. Many of the other variables are used to identify the user, and I have excluded them for further analysis. In addtion `status` is constant for all users, and hence doesn't add variation to the data. 
+
+Because our target variable `has_subscription` is a boolean, we can perform a logistic regression on all the other variables to see if they have any meaningful contribution to the the probability of subscription. We've decided to use logistic regression both because we are dealing with a classification problem, and because we will be able to interpret the model parameters after fitting the model. 
+
+We used `AIC` as a metric for model selection, and after trying a lot of different variations of the data variables, the best, and most minimalistic model based on AIC strictly only contained the school variable.
+```{r user_model}
+summary(users_final_model)
+```
+
+#### Interpretation
+From the model we can see that the significant variables appear to be those coming from the school, meaning that the institution that the user is from plays a significant role in their likelihood of subscribing to the service. 
+In logistic regression, the response that's being modelled is actually the `log(odds)` of a user having a subscription/being subscribed. We define odds as the ratio: `P(success)/P(failure)`. So using this definition, if a student is from **School 1**, they would have about a `2.9%` chance of being a subscriber. **School 2** is the only institution where the students are more likely to be subscribers than the base school. From this we can infer that there may some differences in schools that may account for increased subscription rates, and we could possibly look at school 2 for such indications.
+
+In the plot below you can see 
+```{r school_sub_rate, echo=FALSE}
+# subs_plot
+hchart(sub_ratio2 %>% mutate(ratio = signif(ratio * 10, 2)), "column", hcaes(x = school_id, y = ratio), name="Conversion Rate") %>%
+  hc_subtitle(text="True Rate of Subscriptions per School VS Model Predictions") %>%
+  hc_xAxis(title = list(text = "School ID")) %>%
+  hc_yAxis(title=list(text="Coversion Rates (%)")) %>%
+  hc_add_series(name = "Predictions", data = signif(users_test_data$prob * 10, 2))
+```
+
+### Courses
+We've decided to skip over the analysis at the `course` level because courses and department data frames both contain very similar numeric variables, where the latter are just aggregation of the former. In addition, I was unable to find any meaningful correlation between many of the numeric variables at the course level as exhibited below. The only predictor variables in the bunch would be `doc counts` and `enrollment_count`.
+
+```{r}
+corrplot(ce_corr_matrix, method="ellipse")
+```
+
+If you observe the sub count column, we see that it's not strongly related to any of the variables except for `sub/enroll ratio`, however that should be disregarded because they're both proxies for our target of interest, and one is used in the creation of the other.
+
+### Departments
+
+#### Overview
+We'll now try to look at this problem at the department level. The variables that we will look at in this part of the analysis will be shown below:
+
+```{r, echo=FALSE}
+str(full_dep)
+```
+
+We are now going to use `total_subs` as our target variable in this part of the analysis, thus we want to see what factors can contribute to changes in this particular variable. Many of these are numeric values, except for of course `school_id`. Because we have so many numeric values, we can generate a correlation matrix and plot to see if we can detect any relationships in the data.
+
+```{r, echo=FALSE}
+corrplot(dep_corr_matrix, method="ellipse")
+```
+
+The correlation matrix seems to indicate strong positive relationships between the number of subs, and 3 other variables:
+
+1. number of enrollments in the department
+2. number of coursesin the department
+3. number of documents in the department
+
+We can try to better quantify and understand these relationships by fitting a model. The model I will choose will be another `Generalized Linear Model`; In order to model counts(ie: total subs), we will be using `Poisson Regression`.
+
+We used the `step` function in the `stats` package in order to compare multiple models, using different variations of the available variables, and the best model is presented below:
+
+```{r, echo=FALSE}
+summary(new_dep_model)
+```
+
+The model recognizes that the `school` the department belongs to, and the `number of documents` the department has under its name on the platform contribute the most to the number of subscriptions. In order to interpret the coefficients presented, we must exponentiate them, because `Poisson Regression` estimates the `log(counts)`.
+
+```{r}
+exp(coef(new_dep_model))
+```
+
+In poisson regression, if we increase the unit of the predictor variable by 1, then estimated count will be multiplied by the value of its coefficient (holding all else constant). So for example, if we increase the number of documents by 1, it will multiply the count by 1.0066. This seems like a small number, albeit positive; this seems to indicate a need to increase the number of documents a lot just to see some increase in subscriptions. However there still seems to be some unknown variable or influence that we haven't accounted for, but is present at the school level. Again, we see something about `school 2` that contributes to the greater number of subscriptions the institution receives.
+
+### Schools
+
+In the previous sections were able to see the importance the school variable played in the analysis. Thus we should definitely try to uncover the reason behind the enigmas we've uncovered in previous sections. Like every section before, we will start off with a preview of the variables we will be looking at:
+
+```{r, echo=FALSE}
+str(schools_final)
+```
+
+The target variables we have this time around are `subscriptions` (which counts the number of users subscribed from this school), and `subscription_ratio` (subscribers/students). Thus when we view the correlation matrix, we should focus on those particular rows (or columns, because of symmetry).
+
+```{r, echo = FALSE}
+hchart(corr_matrix)
+```
+
+We can see that because `subscription ratio` and `subscriptions` are so similar, we see that the correlations between these and the other variables appear very similar. It appears as though the number of documents, of all types has a positive linear relationship with `subscriptions`. Moreover, we see that `has_doc_ratio` (which is a measurement of the proportion of courses with documents) has a positive relationship with `subscriptions`. It's a bit suprising, but in line with what we've just talked about that course and department counts have slight negative associations with `subscriptions`. I think this could be because people don't like seeing blank/missing content, or perhaps their hopes were high when they saw the course code, but disappointed when there's little or no content associated with them. In addition, increased enrollment also seems to be linked to higher levels of `subscriptions`. 
+
+Something that's also interesting is that values for these variables have relatively the same proportions as we cycle through schools. We can see for example that `school 2` always has one of the higher values for all the variables of interest, while `school 5 and 8` are generally on the lower end. This seems to emphasize that the relationship that was brought to light in the correlation matrix above.
+
+```{r plots for countries, echo=FALSE, fig.width=10,fig.height=6}
+doc_plot
+enrollment_plot
+subs_plot
+has_doc_ratio_plot
+```
+
+Unfortunately with only 10 values (because there are only 10 schools), we're unable to fit any meaningful model, and hence we will leave that out at this level. However we have good indication that schools with greater enrollment, documents, and especially more courses with documents seem to have a positive influence on subscription counts.
+
+
+## Conclusions and Suggestions
+
+Throughout the entire analysis we have seen that the school the users are from have a big impact on the number of subscriptions that come as a result. Finally looking at the school level, we see that the number of documents, of all sorts have a positive impact on subscriptions. Thus increasing documents should be a priority if the goal is to gain subscribers. Moreover, the amount of people enrolled in the schools and departments are also related to subscriptions, although the strategy around this relationship may not be as clear as increasing the number of documents. Finally we saw that the number of courses, and departmentsdon't actually play a huge factor in the bumping subscriber counts, however having more courses with documents helps, as seen by the `has_doc_ratio` variable in the correlation matrix in the previous section. 

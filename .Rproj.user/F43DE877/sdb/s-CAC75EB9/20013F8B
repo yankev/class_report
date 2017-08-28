@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# subscription ratio table\n\nsubscriptions_query <- \"WITH subscription_1 AS (\nselect users.school_id, subscriptions.kind, count(*) as subscriptions\nfrom subscriptions\nright join users on users.id = user_id\ngroup by users.school_id, subscriptions.kind\norder by school_id, kind\n)\nSELECT *,\nsum(subscriptions) OVER (PARTITION BY school_id) as total_students,\nsubscriptions/sum(subscriptions) OVER (PARTITION BY school_id) as subscription_ratio\nfrom subscription_1;\"\n\nsubscriptions_ratio <- dbGetQuery(con, subscriptions_query)\nsubscriptions_ratio$school_id <- as.factor(subscriptions_ratio$school_id)\n# make a plot of the subscriptions\n\nsubscriptions_ratio %>% ggplot(aes(x=school_id, y=subscriptions, fill=kind)) + geom_bar(stat=\"identity\")\n\n\n# in order to get total subscriptions\nsub_ratio2 <- \n  subscriptions_ratio %>%\n  filter(!is.na(kind)) %>%\n  group_by(school_id) %>%\n  summarise(total_subscriptions = sum(subscriptions), total_students = mean(total_students)) %>%\n  mutate(ratio = total_subscriptions/total_students)\n\n# Rate of subscriptions per school\n\nsubs_plot <- sub_ratio2 %>% \n  ggplot(aes(x=school_id, y=ratio, fill=school_id)) + \n  geom_bar(stat=\"identity\") + \n  scale_fill_brewer(palette = \"Paired\", name=\"School ID\") +\n  ylab(label = \"Conversion Rate (%) \") +\n  xlab(label = \"School ID\") + \n  ggtitle(\"Rate of Subscriptions per School\")\n\n\n",
+    "created" : 1503644684647.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "786964781",
+    "id" : "20013F8B",
+    "lastKnownWriteTime" : 1503683169,
+    "last_content_update" : 1503683169373,
+    "path" : "~/students/subscriptions.R",
+    "project_path" : "subscriptions.R",
+    "properties" : {
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
